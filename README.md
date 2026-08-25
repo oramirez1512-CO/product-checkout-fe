@@ -12,12 +12,24 @@ Feature-oriented layout under `src/`:
 src/
   app/               # store and app-level wiring
   features/          # product, checkout, payment
-  shared/            # ui, api client, validators
+  shared/            # ui, api client, validators, config
   pages/             # route-level screens
 ```
 
 Checkout progress should survive refresh (Redux + localStorage). Card secrets are never stored in full.
 
+## Environment
+
+Copy `.env.example` → `.env` (or `.env.local`) and point at the API. Never commit secrets.
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_URL` | Backend base URL |
+| `VITE_BASE_FEE` / `VITE_DELIVERY_FEE` | Display defaults (COP); API is source of truth |
+| `VITE_CURRENCY` | Default `COP` |
+
+Agreed fee defaults: **base `3500.00`**, **delivery `10000.00`** (same as backend). Also in `src/shared/config/fees.ts`.
+
 ## Status
 
-Scaffold only — folder structure is in place. App bootstrap, screens, and API wiring come next.
+Phase 0 done: scaffold, env example, agreed fees. App bootstrap and screens come next.

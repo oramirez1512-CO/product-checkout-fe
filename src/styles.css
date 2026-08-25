@@ -1,0 +1,88 @@
+:root {
+  color: #1a1f1c;
+  background:
+    radial-gradient(120% 80% at 10% -10%, #d8e6df 0%, transparent 55%),
+    radial-gradient(90% 60% at 100% 0%, #f0e6d8 0%, transparent 50%),
+    #f7f5f1;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  line-height: 1.45;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  min-height: 100vh;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4d5b54;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 8vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.lede {
+  margin: 0;
+  max-width: 22rem;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 1rem;
+  color: #3a433e;
+}
+
+.meta {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 0.9rem;
+}
+
+.meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #c9d2cc;
+  padding-top: 0.75rem;
+}
+
+.meta dt {
+  margin: 0;
+  color: #5c6a63;
+}
+
+.meta dd {
+  margin: 0;
+  text-align: right;
+  word-break: break-all;
+}

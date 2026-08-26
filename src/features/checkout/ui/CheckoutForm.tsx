@@ -26,9 +26,6 @@ const emptyErrors = (): CheckoutFieldErrors => ({
 export function CheckoutForm() {
   const dispatch = useAppDispatch();
   const stored = useAppSelector(selectCheckoutDraft);
-  const step = useAppSelector((s) => s.checkout.step);
-  const brandStored = useAppSelector((s) => s.checkout.card.brand);
-  const lastFour = useAppSelector((s) => s.checkout.card.lastFour);
 
   const [draft, setDraft] = useState<CheckoutDraft>(stored);
   const [errors, setErrors] = useState<CheckoutFieldErrors>(emptyErrors);
@@ -74,30 +71,6 @@ export function CheckoutForm() {
 
   function handleCancel() {
     dispatch(closeCheckout());
-  }
-
-  if (step === 'ready') {
-    return (
-      <div className="checkout-form checkout-form--ready" role="status">
-        <Text as="h2" id="checkout-dialog-title" className="checkout-form__title">
-          Details saved
-        </Text>
-        <Text tone="muted">
-          Customer, delivery, and card draft are ready. Payment summary comes
-          next.
-        </Text>
-        {brandStored !== 'unknown' && lastFour ? (
-          <Text className="checkout-form__brand">
-            {cardBrandLabel(brandStored)} ···· {lastFour}
-          </Text>
-        ) : null}
-        <div className="checkout-form__actions">
-          <Button type="button" variant="secondary" onClick={handleCancel}>
-            Close
-          </Button>
-        </div>
-      </div>
-    );
   }
 
   return (

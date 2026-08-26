@@ -4,6 +4,7 @@ import { Button, Text } from '@/shared/ui/atoms';
 import { openCheckout } from '@/features/checkout/checkoutSlice';
 import { CheckoutForm } from '@/features/checkout/ui/CheckoutForm';
 import { CheckoutModal } from '@/features/checkout/ui/CheckoutModal';
+import { PaymentSummary } from '@/features/checkout/ui/PaymentSummary';
 import {
   fetchProducts,
   selectPrimaryProduct,
@@ -18,7 +19,10 @@ export function ProductPage() {
   const product = useAppSelector(selectPrimaryProduct);
   const selectedId = useAppSelector((state) => state.product.selectedId);
   const checkoutStep = useAppSelector((state) => state.checkout.step);
-  const checkoutOpen = checkoutStep === 'form' || checkoutStep === 'ready';
+  const checkoutOpen =
+    checkoutStep === 'form' ||
+    checkoutStep === 'summary' ||
+    checkoutStep === 'pay';
 
   useEffect(() => {
     void dispatch(fetchProducts());
@@ -40,7 +44,7 @@ export function ProductPage() {
           Catalog
         </Text>
         <Text tone="muted">
-          Single-product MVP. Buy opens the checkout form (no charge yet).
+          Buy opens checkout → summary. Payment charge comes next.
         </Text>
       </header>
 
@@ -68,16 +72,19 @@ export function ProductPage() {
       {product ? (
         <>
           <ProductCard product={product} onBuy={handleBuy} />
-          {selectedId === product.id && checkoutStep === 'ready' ? (
+          {selectedId === product.id && checkoutStep === 'pay' ? (
             <Text tone="muted" className="page__hint">
-              Checkout draft saved — summary step comes next.
+              Summary confirmed — pay API lands in the next release.
             </Text>
           ) : null}
         </>
       ) : null}
 
       <CheckoutModal open={checkoutOpen}>
-        <CheckoutForm />
+        {checkoutStep === 'form' ? <CheckoutForm /> : null}
+        {checkoutStep === 'summary' || checkoutStep === 'pay' ? (
+          <PaymentSummary />
+        ) : null}
       </CheckoutModal>
     </main>
   );

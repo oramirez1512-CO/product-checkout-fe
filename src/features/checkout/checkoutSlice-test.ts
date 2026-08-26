@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import { configureStore } from '@reduxjs/toolkit';
 import {
+  backToCheckoutForm,
   checkoutReducer,
   closeCheckout,
+  confirmSummaryForPay,
   openCheckout,
   resetCheckout,
   selectCheckoutDraft,
@@ -17,6 +19,23 @@ function buildStore() {
 }
 
 const futureYear = String(new Date().getFullYear() + 2);
+
+const validDraft = () => ({
+  customer: { email: 'Ada@X.co', fullName: 'Ada', phone: '' },
+  delivery: {
+    address: 'Calle 1',
+    city: 'Bogotá',
+    region: 'Cund',
+    postalCode: '',
+  },
+  card: {
+    number: '4242 4242 4242 4242',
+    cvc: '123',
+    expMonth: '1',
+    expYear: futureYear,
+    cardHolder: ' Ada ',
+  },
+});
 
 describe('checkoutSlice', () => {
   it('opens and closes the form step', () => {
@@ -69,34 +88,17 @@ describe('checkoutSlice', () => {
     expect(store.getState().checkout.card.lastFour).toBe('4444');
   });
 
-  it('submitCheckoutDraft marks ready and normalizes email', () => {
+  it('submitCheckoutDraft opens summary and normalizes email', () => {
     // Arrange
     const store = buildStore();
     store.dispatch(openCheckout());
 
     // Act
-    store.dispatch(
-      submitCheckoutDraft({
-        customer: { email: 'Ada@X.co', fullName: 'Ada', phone: '' },
-        delivery: {
-          address: 'Calle 1',
-          city: 'Bogotá',
-          region: 'Cund',
-          postalCode: '',
-        },
-        card: {
-          number: '4242 4242 4242 4242',
-          cvc: '123',
-          expMonth: '1',
-          expYear: futureYear,
-          cardHolder: ' Ada ',
-        },
-      }),
-    );
+    store.dispatch(submitCheckoutDraft(validDraft()));
 
     // Assert
     const state = store.getState().checkout;
-    expect(state.step).toBe('ready');
+    expect(state.step).toBe('summary');
     expect(state.customer.email).toBe('ada@x.co');
     expect(state.card.expMonth).toBe('01');
     expect(state.card.cardHolder).toBe('Ada');
@@ -105,22 +107,40 @@ describe('checkoutSlice', () => {
     );
   });
 
-  it('editing after ready returns to form', () => {
+  it('confirmSummaryForPay advances only from summary', () => {
     // Arrange
     const store = buildStore();
-    store.dispatch(
-      submitCheckoutDraft({
-        customer: { email: 'a@b.co', fullName: 'A', phone: '' },
-        delivery: { address: 'x', city: 'y', region: 'z', postalCode: '' },
-        card: {
-          number: '4242424242424242',
-          cvc: '123',
-          expMonth: '12',
-          expYear: futureYear,
-          cardHolder: 'A',
-        },
-      }),
-    );
+    store.dispatch(submitCheckoutDraft(validDraft()));
+
+    // Act
+    store.dispatch(confirmSummaryForPay());
+
+    // Assert
+    expect(store.getState().checkout.step).toBe('pay');
+
+    // Act — ignored when already pay
+    store.dispatch(confirmSummaryForPay());
+
+    // Assert
+    expect(store.getState().checkout.step).toBe('pay');
+  });
+
+  it('backToCheckoutForm returns to form from summary', () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch(submitCheckoutDraft(validDraft()));
+
+    // Act
+    store.dispatch(backToCheckoutForm());
+
+    // Assert
+    expect(store.getState().checkout.step).toBe('form');
+  });
+
+  it('editing after summary returns to form', () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch(submitCheckoutDraft(validDraft()));
 
     // Act
     store.dispatch(updateCustomerDraft({ fullName: 'B' }));
@@ -140,5 +160,6 @@ describe('checkoutSlice', () => {
     // Assert
     expect(store.getState().checkout.step).toBe('closed');
     expect(store.getState().checkout.customer.email).toBe('');
+    expect(store.getState().checkout.quantity).toBe(1);
   });
 });

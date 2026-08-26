@@ -12,7 +12,7 @@ import {
   type CardBrand,
 } from '@/shared/validators/card';
 
-export type CheckoutStep = 'closed' | 'form' | 'ready';
+export type CheckoutStep = 'closed' | 'form' | 'summary' | 'pay';
 
 export type CheckoutCardMeta = {
   brand: CardBrand;
@@ -27,6 +27,8 @@ export type CheckoutCardMeta = {
 
 type CheckoutState = {
   step: CheckoutStep;
+  /** MVP: single-unit purchase. */
+  quantity: number;
   customer: CustomerDraft;
   delivery: DeliveryDraft;
   card: CheckoutCardMeta;
@@ -57,6 +59,7 @@ export const emptyCardMeta = (): CheckoutCardMeta => ({
 
 const initialState: CheckoutState = {
   step: 'closed',
+  quantity: 1,
   customer: emptyCustomer(),
   delivery: emptyDelivery(),
   card: emptyCardMeta(),
@@ -90,7 +93,7 @@ const checkoutSlice = createSlice({
       action: PayloadAction<Partial<CustomerDraft>>,
     ) {
       state.customer = { ...state.customer, ...action.payload };
-      if (state.step === 'ready') {
+      if (state.step === 'summary' || state.step === 'pay') {
         state.step = 'form';
       }
     },
@@ -99,7 +102,7 @@ const checkoutSlice = createSlice({
       action: PayloadAction<Partial<DeliveryDraft>>,
     ) {
       state.delivery = { ...state.delivery, ...action.payload };
-      if (state.step === 'ready') {
+      if (state.step === 'summary' || state.step === 'pay') {
         state.step = 'form';
       }
     },
@@ -112,7 +115,7 @@ const checkoutSlice = createSlice({
         cardHolder: action.payload.cardHolder ?? state.card.cardHolder,
       };
       state.card = toCardMeta(merged);
-      if (state.step === 'ready') {
+      if (state.step === 'summary' || state.step === 'pay') {
         state.step = 'form';
       }
     },
@@ -129,7 +132,16 @@ const checkoutSlice = createSlice({
         postalCode: action.payload.delivery.postalCode.trim(),
       };
       state.card = toCardMeta(action.payload.card);
-      state.step = 'ready';
+      state.step = 'summary';
+    },
+    backToCheckoutForm(state) {
+      state.step = 'form';
+    },
+    /** Stage 5 wires the real charge; this only advances the UI step. */
+    confirmSummaryForPay(state) {
+      if (state.step === 'summary') {
+        state.step = 'pay';
+      }
     },
     resetCheckout() {
       return initialState;
@@ -144,6 +156,8 @@ export const {
   updateDeliveryDraft,
   updateCardDraft,
   submitCheckoutDraft,
+  backToCheckoutForm,
+  confirmSummaryForPay,
   resetCheckout,
 } = checkoutSlice.actions;
 

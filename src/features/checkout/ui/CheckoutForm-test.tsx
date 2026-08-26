@@ -7,7 +7,7 @@ import { productReducer } from '@/features/product/productSlice';
 import { checkoutReducer, openCheckout } from '@/features/checkout/checkoutSlice';
 import { CheckoutForm } from './CheckoutForm';
 
-function renderForm(step: 'form' | 'ready' = 'form') {
+function renderForm() {
   const store = configureStore({
     reducer: {
       app: appReducer,
@@ -15,9 +15,7 @@ function renderForm(step: 'form' | 'ready' = 'form') {
       checkout: checkoutReducer,
     },
   });
-  if (step === 'form') {
-    store.dispatch(openCheckout());
-  }
+  store.dispatch(openCheckout());
   return {
     store,
     ...render(
@@ -49,7 +47,7 @@ describe('CheckoutForm', () => {
     expect(screen.getByText(/Full name is required/i)).toBeTruthy();
   });
 
-  it('saves valid draft and shows ready state', async () => {
+  it('saves valid draft and moves checkout to summary step', async () => {
     // Arrange
     const { store } = renderForm();
 
@@ -89,9 +87,8 @@ describe('CheckoutForm', () => {
 
     // Assert
     await waitFor(() => {
-      expect(screen.getByText('Details saved')).toBeTruthy();
+      expect(store.getState().checkout.step).toBe('summary');
     });
-    expect(store.getState().checkout.step).toBe('ready');
     expect(store.getState().checkout.card.lastFour).toBe('4242');
   });
 

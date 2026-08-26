@@ -50,8 +50,8 @@ export function HomePage() {
         Product checkout
       </Text>
       <Text tone="muted" className="shell__lede">
-        Foundation shell — shared API client, atoms, and env wiring. Product and
-        checkout screens come in later PRs.
+        Foundation shell — shared API client, atoms, and env wiring. Product
+        catalog lives at <code>/</code>.
       </Text>
 
       <dl className="meta">

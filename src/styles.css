@@ -163,3 +163,125 @@ body {
   outline: 2px solid color-mix(in srgb, var(--color-accent) 45%, white);
   outline-offset: 1px;
 }
+
+.page {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.page__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.page__eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.page__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.page__status--error {
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, white);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-danger) 8%, white);
+}
+
+.page__hint {
+  font-size: 0.9rem;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.product-card__media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #e8ebe8;
+}
+
+.product-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-card__placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.product-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.product-card__title {
+  margin: 0;
+  font-size: clamp(1.35rem, 5vw, 1.75rem);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.product-card__description {
+  margin: 0;
+}
+
+.product-card__meta {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.product-card__meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.product-card__meta dt {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.product-card__meta dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.product-card__meta dd.is-danger {
+  color: var(--color-danger);
+}

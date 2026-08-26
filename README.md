@@ -11,13 +11,16 @@ Feature-oriented layout + light atomic design:
 ```
 src/
   app/                      # store, typed hooks
-  features/                 # product, checkout, payment (filled in later PRs)
+  features/
+    product/                # api, slice, ProductPage, ProductCard
+    checkout/ payment/      # later
   shared/
     api/                    # JSON client + x-api-key
     config/                 # env + display fees
+    lib/                    # money helpers
     ui/atoms/               # Button, Input, Text
     validators/             # later
-  pages/                    # route screens
+  pages/                    # /status diagnostics
 ```
 
 Only create UI pieces when a stage needs them. Checkout progress will survive refresh later (Redux + localStorage). Card secrets are never stored in full.
@@ -52,10 +55,10 @@ npm run dev
 | `npm test` | Unit tests (Jest) |
 | `npm run test:cov` | Tests + coverage report |
 
-- App: `http://localhost:5173`
-- Shell pings `GET /health` on load (no API key required on that route).
+- App: `http://localhost:5173` (product catalog)
+- Diagnostics / health: `http://localhost:5173/status`
 
-## Deploy on Vercel (from this PR onward)
+## Deploy on Vercel (from foundation PR onward)
 
 Deploy early: every feature PR should get a **Preview** URL.
 
@@ -83,4 +86,5 @@ After the first successful deploy, paste the Production URL here:
 
 - Phase 0: scaffold, env example, fees — done
 - Phase bootstrap: Vite + Redux + router — done
-- **Phase foundation (`feature/fe-foundation`)**: shared API client, atoms, env/`VITE_API_KEY`, simple CSS, Vercel wiring docs — in progress / this branch
+- Phase foundation: shared API client, atoms, env/`VITE_API_KEY`, Vercel — done
+- **Phase product page (`feature/fe-product-page`)**: `GET /products`, ProductCard, loading/error/empty, Buy CTA (selection in Redux for checkout next)

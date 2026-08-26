@@ -18,6 +18,10 @@ export default {
           moduleResolution: 'bundler',
           target: 'ES2022',
           types: ['jest', 'node'],
+          baseUrl: '.',
+          paths: {
+            '@/*': ['src/*'],
+          },
         },
       },
     ],

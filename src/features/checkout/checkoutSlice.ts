@@ -8,19 +8,14 @@ import type { DeliveryDraft } from '@/shared/validators/delivery';
 import {
   cardLastFour,
   detectCardBrand,
+  normalizeExpMonth,
+  normalizeExpYear,
   onlyDigits,
 } from '@/shared/validators/card';
-import type { TransactionResponse, CheckoutCardMeta } from './types';
+import type { TransactionResponse, CheckoutCardMeta, CheckoutStep } from './types';
 import { runPayFlow } from './runPayFlow';
 
-export type CheckoutStep =
-  | 'closed'
-  | 'form'
-  | 'summary'
-  | 'paying'
-  | 'result';
-
-export type { CheckoutCardMeta };
+export type { CheckoutCardMeta, CheckoutStep };
 
 type CheckoutState = {
   step: CheckoutStep;
@@ -79,8 +74,9 @@ function toCardMeta(card: CardDraft): CheckoutCardMeta {
     lastFour: cardLastFour(number),
     number,
     cvc: onlyDigits(card.cvc),
-    expMonth: onlyDigits(card.expMonth).padStart(2, '0').slice(-2),
-    expYear: onlyDigits(card.expYear),
+    // Provider tokenization expects 2-digit month/year strings.
+    expMonth: normalizeExpMonth(card.expMonth),
+    expYear: normalizeExpYear(card.expYear),
     cardHolder: card.cardHolder.trim(),
   };
 }

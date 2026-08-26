@@ -7,6 +7,8 @@ import {
   isValidCvc,
   isValidExpMonth,
   isValidExpYear,
+  normalizeExpMonth,
+  normalizeExpYear,
   onlyDigits,
 } from './card';
 
@@ -66,20 +68,26 @@ describe('card validators', () => {
   describe('expiry and cvc boundaries', () => {
     const now = new Date(2026, 7, 26); // Aug 26, 2026
 
-    it('month min/max', () => {
+    it('month min/max (1–2 digits; provider uses 2)', () => {
       // Arrange / Act / Assert
       expect(isValidExpMonth('1')).toBe(true);
+      expect(isValidExpMonth('01')).toBe(true);
       expect(isValidExpMonth('12')).toBe(true);
       expect(isValidExpMonth('0')).toBe(false);
       expect(isValidExpMonth('13')).toBe(false);
+      expect(isValidExpMonth('123')).toBe(false);
+      expect(normalizeExpMonth('1')).toBe('01');
+      expect(normalizeExpMonth('12')).toBe('12');
     });
 
-    it('year YY/YYYY and past year', () => {
+    it('year YY/YYYY and past year; normalize to YY for provider', () => {
       // Arrange / Act / Assert
       expect(isValidExpYear('26', now)).toBe(true);
       expect(isValidExpYear('2026', now)).toBe(true);
       expect(isValidExpYear('25', now)).toBe(false);
       expect(isValidExpYear('2', now)).toBe(false);
+      expect(normalizeExpYear('2028')).toBe('28');
+      expect(normalizeExpYear('28')).toBe('28');
     });
 
     it('expiry through end of month', () => {

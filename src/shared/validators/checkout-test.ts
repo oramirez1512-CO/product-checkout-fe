@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   hasCheckoutErrors,
+  isValidCardHolder,
+  MIN_CARD_HOLDER_LENGTH,
+  validateCardDraft,
   validateCheckoutDraft,
   validateCustomerDraft,
 } from './checkout';
@@ -100,5 +103,44 @@ describe('delivery / checkout validate', () => {
 
     // Assert
     expect(errors.card.number).toMatch(/Visa|Mastercard/i);
+  });
+
+  it('cardHolder min length matches provider (boundary 4 vs 5)', () => {
+    // Arrange / Act / Assert
+    expect(MIN_CARD_HOLDER_LENGTH).toBe(5);
+    expect(isValidCardHolder('Ada')).toBe(false);
+    expect(isValidCardHolder('Adas')).toBe(false);
+    expect(isValidCardHolder('Ada B')).toBe(true);
+    expect(isValidCardHolder('Ada Buyer')).toBe(true);
+
+    const short = validDraft();
+    short.card.cardHolder = 'Ada';
+    expect(validateCardDraft(short.card).cardHolder).toMatch(/at least 5/i);
+
+    const exact = validDraft();
+    exact.card.cardHolder = 'Adasx';
+    expect(validateCardDraft(exact.card).cardHolder).toBeUndefined();
+  });
+
+  it('rejects CVC with non-digits; requires 3 for Visa/MC', () => {
+    // Arrange
+    const letters = validDraft();
+    letters.card.cvc = '12a';
+
+    // Act / Assert
+    expect(validateCardDraft(letters.card).cvc).toMatch(/digits only/i);
+
+    const short = validDraft();
+    short.card.cvc = '12';
+    expect(validateCardDraft(short.card).cvc).toMatch(/3 digits/i);
+  });
+
+  it('rejects month outside 01–12', () => {
+    // Arrange
+    const draft = validDraft();
+    draft.card.expMonth = '13';
+
+    // Act / Assert
+    expect(validateCardDraft(draft.card).expMonth).toMatch(/01–12/);
   });
 });

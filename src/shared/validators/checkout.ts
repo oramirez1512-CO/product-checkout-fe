@@ -10,6 +10,9 @@ import {
 import { isNonEmpty, isValidEmail, isValidPhone } from './contact';
 import { validateDeliveryDraft, type DeliveryDraft } from './delivery';
 
+/** Sandbox payment provider rejects card_holder shorter than 5. */
+export const MIN_CARD_HOLDER_LENGTH = 5;
+
 export type CustomerDraft = {
   email: string;
   fullName: string;
@@ -35,6 +38,10 @@ export type CheckoutFieldErrors = {
   delivery: Partial<Record<keyof DeliveryDraft, string>>;
   card: Partial<Record<keyof CardDraft, string>>;
 };
+
+export function isValidCardHolder(value: string): boolean {
+  return value.trim().length >= MIN_CARD_HOLDER_LENGTH;
+}
 
 export function validateCustomerDraft(
   draft: CustomerDraft,
@@ -67,10 +74,12 @@ export function validateCardDraft(
 
   if (!isNonEmpty(draft.cardHolder)) {
     errors.cardHolder = 'Cardholder name is required';
+  } else if (!isValidCardHolder(draft.cardHolder)) {
+    errors.cardHolder = `Cardholder must be at least ${MIN_CARD_HOLDER_LENGTH} characters`;
   }
 
   if (!isValidExpMonth(draft.expMonth)) {
-    errors.expMonth = 'Month must be 01–12';
+    errors.expMonth = 'Month must be 01–12 (2 digits)';
   }
 
   const yearDigits = onlyDigits(draft.expYear);
@@ -80,8 +89,13 @@ export function validateCardDraft(
     errors.expYear = 'Card is expired';
   }
 
-  if (!isValidCvc(draft.cvc, brand)) {
-    errors.cvc = 'CVC must be 3 digits';
+  const cvcDigits = onlyDigits(draft.cvc);
+  if (cvcDigits !== draft.cvc.trim()) {
+    errors.cvc = 'CVC must be digits only';
+  } else if (!isValidCvc(draft.cvc, brand)) {
+    errors.cvc = brand === 'visa' || brand === 'mastercard'
+      ? 'CVC must be 3 digits'
+      : 'CVC must be 3 or 4 digits';
   }
 
   return errors;

@@ -154,4 +154,5 @@ After the first successful deploy, paste the Production URL here:
 - **Phase checkout form (`feature/fe-checkout-form`)**: modal with customer + delivery + card; Luhn/Visa/MC validation; draft in Redux — done
 - **Phase summary (`feature/fe-summary`)**: payment summary + Pay CTA — done
 - **Phase pay flow (`feature/fe-pay-flow`)**: customer → delivery → PENDING → `/pay` → result; stock refetch on APPROVED — done
-- **Phase persistence (`feature/fe-persistence`)**: F5 restores step + drafts/ids (never PAN/CVV); re-enter card to pay
+- **Phase persistence (`feature/fe-persistence`)**: F5 restores step + drafts/ids (never PAN/CVV); re-enter card to pay — done
+- **Phase tests (`feature/fe-tests`)**: residual checkout/pay/persistence coverage — `npm run test:cov` ≈ **99.8%** statements/lines, **~91%** branches (threshold ≥80% / ≥70% branches); 118 tests

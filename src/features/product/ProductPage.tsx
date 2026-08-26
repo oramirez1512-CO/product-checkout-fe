@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Button, Text } from '@/shared/ui/atoms';
+import { openCheckout } from '@/features/checkout/checkoutSlice';
+import { CheckoutForm } from '@/features/checkout/ui/CheckoutForm';
+import { CheckoutModal } from '@/features/checkout/ui/CheckoutModal';
 import {
   fetchProducts,
   selectPrimaryProduct,
@@ -14,6 +17,8 @@ export function ProductPage() {
   const error = useAppSelector((state) => state.product.error);
   const product = useAppSelector(selectPrimaryProduct);
   const selectedId = useAppSelector((state) => state.product.selectedId);
+  const checkoutStep = useAppSelector((state) => state.checkout.step);
+  const checkoutOpen = checkoutStep === 'form' || checkoutStep === 'ready';
 
   useEffect(() => {
     void dispatch(fetchProducts());
@@ -25,7 +30,7 @@ export function ProductPage() {
 
   function handleBuy(productId: string) {
     dispatch(selectProduct(productId));
-    // Checkout form lands in stage 3 — selection is ready in Redux.
+    dispatch(openCheckout());
   }
 
   return (
@@ -35,7 +40,7 @@ export function ProductPage() {
           Catalog
         </Text>
         <Text tone="muted">
-          Single-product MVP loaded from the API. Checkout form comes next.
+          Single-product MVP. Buy opens the checkout form (no charge yet).
         </Text>
       </header>
 
@@ -63,13 +68,17 @@ export function ProductPage() {
       {product ? (
         <>
           <ProductCard product={product} onBuy={handleBuy} />
-          {selectedId === product.id ? (
+          {selectedId === product.id && checkoutStep === 'ready' ? (
             <Text tone="muted" className="page__hint">
-              Selected for checkout (form in the next release).
+              Checkout draft saved — summary step comes next.
             </Text>
           ) : null}
         </>
       ) : null}
+
+      <CheckoutModal open={checkoutOpen}>
+        <CheckoutForm />
+      </CheckoutModal>
     </main>
   );
 }

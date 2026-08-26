@@ -44,12 +44,15 @@ describe('ProductCard', () => {
   });
 
   it('renders image when imageUrl is set', () => {
+    // Act
     render(
       <ProductCard
         product={{ ...product, imageUrl: 'https://cdn.example/a.png' }}
         onBuy={jest.fn()}
       />,
     );
+
+    // Assert
     expect(document.querySelector('img.product-card__image')).toBeTruthy();
   });
 });

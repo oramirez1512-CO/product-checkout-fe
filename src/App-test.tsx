@@ -13,9 +13,12 @@ jest.mock('@/features/product/api', () => ({
 
 describe('App routes', () => {
   it('renders product catalog on /', async () => {
+    // Arrange
     (productApi.listProducts as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(
       [],
     );
+
+    // Act
     render(
       <Provider store={store}>
         <MemoryRouter initialEntries={['/']}>
@@ -23,10 +26,13 @@ describe('App routes', () => {
         </MemoryRouter>
       </Provider>,
     );
+
+    // Assert
     expect(await screen.findByText('Catalog')).toBeTruthy();
   });
 
   it('renders foundation status page on /status', async () => {
+    // Act
     render(
       <Provider store={store}>
         <MemoryRouter initialEntries={['/status']}>
@@ -34,6 +40,8 @@ describe('App routes', () => {
         </MemoryRouter>
       </Provider>,
     );
+
+    // Assert
     expect(await screen.findByRole('heading', { name: 'Product checkout' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ping API' })).toBeTruthy();
   });

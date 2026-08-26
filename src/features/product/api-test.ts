@@ -9,13 +9,17 @@ describe('product api', () => {
   });
 
   it('listProducts hits GET /products', async () => {
+    // Arrange
     global.fetch = jest.fn(async () => ({
       ok: true,
       status: 200,
       text: async () => JSON.stringify([]),
     })) as unknown as typeof fetch;
 
+    // Act
     await listProducts();
+
+    // Assert
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/products'),
       expect.any(Object),
@@ -23,6 +27,7 @@ describe('product api', () => {
   });
 
   it('getProduct hits GET /products/:id', async () => {
+    // Arrange
     global.fetch = jest.fn(async () => ({
       ok: true,
       status: 200,
@@ -37,7 +42,10 @@ describe('product api', () => {
         }),
     })) as unknown as typeof fetch;
 
+    // Act
     const product = await getProduct('1');
+
+    // Assert
     expect(product.name).toBe('A');
     expect(String((global.fetch as jest.Mock).mock.calls[0][0])).toContain(
       '/products/1',

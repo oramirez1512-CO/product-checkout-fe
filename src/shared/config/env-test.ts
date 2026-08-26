@@ -22,6 +22,7 @@ describe('getAppEnv', () => {
   });
 
   it('defaults apiUrl when missing', () => {
+    // Arrange / Act / Assert
     expect(getAppEnv({}).apiUrl).toBe('http://localhost:3000');
     expect(getAppEnv({}).apiKey).toBeNull();
   });

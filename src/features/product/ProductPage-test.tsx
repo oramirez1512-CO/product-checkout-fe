@@ -5,6 +5,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { ProductPage } from './ProductPage';
 import { productReducer } from './productSlice';
 import { appReducer } from '@/app/appSlice';
+import { checkoutReducer } from '@/features/checkout/checkoutSlice';
 import * as productApi from './api';
 
 jest.mock('./api', () => ({
@@ -25,6 +26,7 @@ function renderPage() {
     reducer: {
       app: appReducer,
       product: productReducer,
+      checkout: checkoutReducer,
     },
   });
   return {
@@ -43,6 +45,7 @@ describe('ProductPage', () => {
   });
 
   it('loads and shows product (happy path)', async () => {
+    // Arrange
     mockedList.mockResolvedValue([
       {
         id: '11111111-1111-4111-8111-111111111111',
@@ -54,8 +57,10 @@ describe('ProductPage', () => {
       },
     ]);
 
+    // Act
     renderPage();
 
+    // Assert
     expect(screen.getByText(/Loading product/)).toBeTruthy();
     await waitFor(() => {
       expect(screen.getByText('Aurora')).toBeTruthy();
@@ -63,14 +68,20 @@ describe('ProductPage', () => {
   });
 
   it('shows empty state when catalog has no products', async () => {
+    // Arrange
     mockedList.mockResolvedValue([]);
+
+    // Act
     renderPage();
+
+    // Assert
     await waitFor(() => {
       expect(screen.getByText(/No products in catalog/)).toBeTruthy();
     });
   });
 
   it('shows error and retries', async () => {
+    // Arrange
     mockedList
       .mockRejectedValueOnce(new Error('network down'))
       .mockResolvedValueOnce([
@@ -84,18 +95,21 @@ describe('ProductPage', () => {
         },
       ]);
 
+    // Act
     renderPage();
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeTruthy();
     });
-
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    // Assert
     await waitFor(() => {
       expect(screen.getByText('Aurora')).toBeTruthy();
     });
   });
 
-  it('selects product on Buy', async () => {
+  it('Buy selects product and opens checkout modal', async () => {
+    // Arrange
     mockedList.mockResolvedValue([
       {
         id: '11111111-1111-4111-8111-111111111111',
@@ -108,10 +122,16 @@ describe('ProductPage', () => {
     ]);
     const { store } = renderPage();
     await waitFor(() => screen.getByText('Aurora'));
+
+    // Act
     fireEvent.click(screen.getByRole('button', { name: 'Buy' }));
+
+    // Assert
     expect(store.getState().product.selectedId).toBe(
       '11111111-1111-4111-8111-111111111111',
     );
-    expect(screen.getByText(/Selected for checkout/)).toBeTruthy();
+    expect(store.getState().checkout.step).toBe('form');
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByLabelText('Full name')).toBeTruthy();
   });
 });

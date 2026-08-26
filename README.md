@@ -16,13 +16,15 @@ src/
   app/                      # store, typed hooks
   features/
     product/                # api, slice, ProductPage, ProductCard
-    checkout/ payment/      # later
+    checkout/               # draft slice, CheckoutForm modal
+    payment/                # later
   shared/
     api/                    # JSON client + x-api-key
     config/                 # env + display fees
     lib/                    # money helpers
+    validators/             # email, delivery, Luhn / Visa-MC
     ui/atoms/               # Button, Input, Text
-    validators/             # later
+    ui/molecules/           # FormField
   pages/                    # /status diagnostics
 ```
 
@@ -55,7 +57,7 @@ npm run dev
 | `npm run dev` | Vite dev server (HMR) |
 | `npm run build` | Typecheck + production build to `dist/` |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | Unit tests (Jest) |
+| `npm test` | Unit tests (Jest; files named `*-test.ts(x)`, AAA) |
 | `npm run test:cov` | Tests + coverage report (threshold ≥80% lines/statements) |
 
 - App: `http://localhost:5173` (product catalog)
@@ -147,5 +149,6 @@ After the first successful deploy, paste the Production URL here:
 - Phase 0: scaffold, env example, fees — done
 - Phase bootstrap: Vite + Redux + router — done
 - Phase foundation: shared API client, atoms, env/`VITE_API_KEY`, Vercel — done
-- **Phase product page (`feature/fe-product-page`)**: `GET /products`, ProductCard, loading/error/empty, Buy CTA (selection in Redux for checkout next)
-- Coverage: Jest threshold ≥80%, CI + Codecov (`codecov.yml`) wired from this PR (same pattern as BE)
+- **Phase product page (`feature/fe-product-page`)**: `GET /products`, ProductCard, loading/error/empty, Buy CTA — done
+- Coverage: Jest threshold ≥80%, CI + Codecov — done
+- **Phase checkout form (`feature/fe-checkout-form`)**: modal with customer + delivery + card; Luhn/Visa/MC validation; draft in Redux (no charge yet)

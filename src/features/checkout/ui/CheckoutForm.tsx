@@ -191,6 +191,7 @@ export function CheckoutForm() {
           id="checkout-cardHolder"
           label="Cardholder"
           error={submittedOnce ? errors.card.cardHolder : undefined}
+          hint="At least 5 characters (as required by the payment provider)"
           inputProps={{
             name: 'cardHolder',
             autoComplete: 'cc-name',
@@ -203,6 +204,7 @@ export function CheckoutForm() {
             id="checkout-expMonth"
             label="Month"
             error={submittedOnce ? errors.card.expMonth : undefined}
+            hint="2 digits (01–12)"
             inputProps={{
               name: 'expMonth',
               inputMode: 'numeric',
@@ -217,11 +219,12 @@ export function CheckoutForm() {
             id="checkout-expYear"
             label="Year"
             error={submittedOnce ? errors.card.expYear : undefined}
+            hint="YY or YYYY"
             inputProps={{
               name: 'expYear',
               inputMode: 'numeric',
               autoComplete: 'cc-exp-year',
-              placeholder: 'YYYY',
+              placeholder: 'YY',
               maxLength: 4,
               value: draft.card.expYear,
               onChange: (e) => patchCard({ expYear: e.target.value }),
@@ -231,12 +234,13 @@ export function CheckoutForm() {
             id="checkout-cvc"
             label="CVC"
             error={submittedOnce ? errors.card.cvc : undefined}
+            hint="3 digits (Visa/Mastercard)"
             inputProps={{
               name: 'cvc',
               inputMode: 'numeric',
               autoComplete: 'cc-csc',
               placeholder: '123',
-              maxLength: 4,
+              maxLength: liveBrand === 'visa' || liveBrand === 'mastercard' ? 3 : 4,
               value: draft.card.cvc,
               onChange: (e) => patchCard({ cvc: e.target.value }),
             }}

@@ -111,6 +111,13 @@ export function PaymentSummary() {
         ) : null}
       </section>
 
+      {!card.number ? (
+        <Text tone="muted" className="payment-summary__restore-hint" role="status">
+          Session restored without card secrets. Re-enter the card number and CVC
+          (Edit details) before paying.
+        </Text>
+      ) : null}
+
       <div className="payment-summary__actions">
         <Button
           type="button"
@@ -122,7 +129,7 @@ export function PaymentSummary() {
         </Button>
         <Button
           type="button"
-          disabled={paying}
+          disabled={paying || !card.number}
           onClick={() => {
             void dispatch(runPayFlow());
           }}

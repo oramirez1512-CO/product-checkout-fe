@@ -56,7 +56,7 @@ const validDraft = () => ({
     cvc: '123',
     expMonth: '1',
     expYear: futureYear,
-    cardHolder: ' Ada ',
+    cardHolder: ' Ada Buyer ',
   },
 });
 
@@ -146,7 +146,8 @@ describe('checkoutSlice', () => {
     expect(state.step).toBe('summary');
     expect(state.customer.email).toBe('ada@x.co');
     expect(state.card.expMonth).toBe('01');
-    expect(state.card.cardHolder).toBe('Ada');
+    expect(state.card.expYear).toBe(futureYear.slice(-2));
+    expect(state.card.cardHolder).toBe('Ada Buyer');
     expect(selectCheckoutDraft(store.getState()).card.number).toBe(
       '4242424242424242',
     );

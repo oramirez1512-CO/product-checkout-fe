@@ -2,7 +2,7 @@
 export default {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
-  testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
+  testMatch: ['**/*-test.ts', '**/*-test.tsx'],
   setupFiles: ['<rootDir>/src/test/setup-jest.ts'],
   moduleNameMapper: {
     '\\.(css|less)$': 'identity-obj-proxy',
@@ -33,7 +33,7 @@ export default {
     '!src/vite-env.d.ts',
     '!src/pages/HomePage.tsx',
     '!src/test/**',
-    '!src/**/*.spec.{ts,tsx}',
+    '!src/**/*-test.{ts,tsx}',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],

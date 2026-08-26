@@ -1,16 +1,27 @@
-import { describe, expect, it } from '@jest/globals';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { appReducer } from '@/app/appSlice';
 import { productReducer, fetchProducts } from '@/features/product/productSlice';
-import {
-  checkoutReducer,
-  confirmSummaryForPay,
-  submitCheckoutDraft,
-} from '@/features/checkout/checkoutSlice';
+import { checkoutReducer, submitCheckoutDraft } from '@/features/checkout/checkoutSlice';
 import { injectAppEnv } from '@/shared/config/env';
 import { PaymentSummary } from './PaymentSummary';
+import * as checkoutApi from '../api';
+
+jest.mock('../api', () => ({
+  upsertCustomer: jest.fn(),
+  createDelivery: jest.fn(),
+  createPendingTransaction: jest.fn(),
+  payTransaction: jest.fn(),
+}));
+
+const mockedApi = checkoutApi as unknown as {
+  upsertCustomer: { mockResolvedValue: (v: unknown) => void };
+  createDelivery: { mockResolvedValue: (v: unknown) => void };
+  createPendingTransaction: { mockResolvedValue: (v: unknown) => void };
+  payTransaction: { mockResolvedValue: (v: unknown) => void };
+};
 
 const futureYear = String(new Date().getFullYear() + 2);
 
@@ -63,6 +74,10 @@ function seedSummary(store: ReturnType<typeof buildStore>) {
 }
 
 describe('PaymentSummary', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders product fees and estimated total', () => {
     // Arrange
     injectAppEnv({
@@ -90,10 +105,59 @@ describe('PaymentSummary', () => {
     expect(screen.getByText(/Visa/)).toBeTruthy();
   });
 
-  it('Pay advances to pay placeholder step', () => {
+  it('Pay runs orchestration and reaches result', async () => {
     // Arrange
     const store = buildStore();
     seedSummary(store);
+    mockedApi.upsertCustomer.mockResolvedValue({
+      id: 'c1',
+      email: 'ada@example.com',
+      fullName: 'Ada Buyer',
+      phone: null,
+    });
+    mockedApi.createDelivery.mockResolvedValue({
+      id: 'd1',
+      customerId: 'c1',
+      address: 'Calle 1',
+      city: 'Bogotá',
+      region: 'Cundinamarca',
+      postalCode: null,
+    });
+    mockedApi.createPendingTransaction.mockResolvedValue({
+      id: 't1',
+      reference: 'r1',
+      status: 'PENDING',
+      productId: product.id,
+      customerId: 'c1',
+      deliveryId: 'd1',
+      quantity: 1,
+      amount: 249900,
+      baseFee: 3500,
+      deliveryFee: 10000,
+      total: 263400,
+      currency: 'COP',
+      providerTransactionId: null,
+      cardBrand: null,
+      cardLastFour: null,
+    });
+    mockedApi.payTransaction.mockResolvedValue({
+      id: 't1',
+      reference: 'r1',
+      status: 'APPROVED',
+      productId: product.id,
+      customerId: 'c1',
+      deliveryId: 'd1',
+      quantity: 1,
+      amount: 249900,
+      baseFee: 3500,
+      deliveryFee: 10000,
+      total: 263400,
+      currency: 'COP',
+      providerTransactionId: 'p1',
+      cardBrand: 'VISA',
+      cardLastFour: '4242',
+    });
+
     render(
       <Provider store={store}>
         <PaymentSummary />
@@ -104,8 +168,10 @@ describe('PaymentSummary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pay' }));
 
     // Assert
-    expect(store.getState().checkout.step).toBe('pay');
-    expect(screen.getByText('Ready to pay')).toBeTruthy();
+    await waitFor(() => {
+      expect(store.getState().checkout.step).toBe('result');
+    });
+    expect(store.getState().checkout.transaction?.status).toBe('APPROVED');
   });
 
   it('Edit details returns to form', () => {
@@ -128,17 +194,19 @@ describe('PaymentSummary', () => {
   it('shows unavailable when product missing', () => {
     // Arrange
     const store = buildStore();
-    store.dispatch(submitCheckoutDraft({
-      customer: { email: 'a@b.co', fullName: 'A', phone: '' },
-      delivery: { address: 'x', city: 'y', region: 'z', postalCode: '' },
-      card: {
-        number: '4242424242424242',
-        cvc: '123',
-        expMonth: '12',
-        expYear: futureYear,
-        cardHolder: 'A',
-      },
-    }));
+    store.dispatch(
+      submitCheckoutDraft({
+        customer: { email: 'a@b.co', fullName: 'A', phone: '' },
+        delivery: { address: 'x', city: 'y', region: 'z', postalCode: '' },
+        card: {
+          number: '4242424242424242',
+          cvc: '123',
+          expMonth: '12',
+          expYear: futureYear,
+          cardHolder: 'A',
+        },
+      }),
+    );
 
     // Act
     render(
@@ -149,23 +217,5 @@ describe('PaymentSummary', () => {
 
     // Assert
     expect(screen.getByText(/Summary unavailable/i)).toBeTruthy();
-  });
-
-  it('confirm from pay view can go back', () => {
-    // Arrange
-    const store = buildStore();
-    seedSummary(store);
-    store.dispatch(confirmSummaryForPay());
-
-    // Act
-    render(
-      <Provider store={store}>
-        <PaymentSummary />
-      </Provider>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-
-    // Assert
-    expect(store.getState().checkout.step).toBe('form');
   });
 });

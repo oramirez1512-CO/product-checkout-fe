@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ApiError } from '@/shared/api/client';
+import { isValidCardHolder } from '@/shared/validators/checkout';
 import {
   createDelivery,
   createPendingTransaction,
@@ -48,6 +49,9 @@ export const runPayFlow = createAsyncThunk<
   }
   if (!card.number || !card.cvc || !card.cardHolder) {
     return rejectWithValue('Card details are incomplete');
+  }
+  if (!isValidCardHolder(card.cardHolder)) {
+    return rejectWithValue('Cardholder must be at least 5 characters');
   }
 
   try {

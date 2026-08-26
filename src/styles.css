@@ -472,6 +472,14 @@ body {
   justify-content: flex-end;
 }
 
+.payment-summary__restore-hint {
+  font-size: 0.9rem;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-accent) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, white);
+}
+
 .payment-result {
   display: flex;
   flex-direction: column;

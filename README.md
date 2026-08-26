@@ -28,7 +28,7 @@ src/
   pages/                    # /status diagnostics
 ```
 
-Only create UI pieces when a stage needs them. Checkout progress will survive refresh later (Redux + localStorage). Card secrets are never stored in full.
+Only create UI pieces when a stage needs them. Checkout progress survives refresh (Redux + localStorage) without storing PAN/CVV.
 
 ## Environment
 
@@ -153,4 +153,5 @@ After the first successful deploy, paste the Production URL here:
 - Coverage: Jest threshold ≥80%, CI + Codecov — done
 - **Phase checkout form (`feature/fe-checkout-form`)**: modal with customer + delivery + card; Luhn/Visa/MC validation; draft in Redux — done
 - **Phase summary (`feature/fe-summary`)**: payment summary + Pay CTA — done
-- **Phase pay flow (`feature/fe-pay-flow`)**: customer → delivery → PENDING → `/pay` → result; stock refetch on APPROVED
+- **Phase pay flow (`feature/fe-pay-flow`)**: customer → delivery → PENDING → `/pay` → result; stock refetch on APPROVED — done
+- **Phase persistence (`feature/fe-persistence`)**: F5 restores step + drafts/ids (never PAN/CVV); re-enter card to pay

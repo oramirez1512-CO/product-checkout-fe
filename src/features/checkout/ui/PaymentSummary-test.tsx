@@ -218,4 +218,45 @@ describe('PaymentSummary', () => {
     // Assert
     expect(screen.getByText(/Summary unavailable/i)).toBeTruthy();
   });
+
+  it('disables Pay when card number missing after restore', () => {
+    // Arrange
+    const store = buildStore();
+    seedSummary(store);
+    store.dispatch(
+      submitCheckoutDraft({
+        customer: {
+          email: 'ada@example.com',
+          fullName: 'Ada Buyer',
+          phone: '',
+        },
+        delivery: {
+          address: 'Calle 1',
+          city: 'Bogotá',
+          region: 'Cundinamarca',
+          postalCode: '',
+        },
+        card: {
+          number: '',
+          cvc: '',
+          expMonth: '12',
+          expYear: futureYear,
+          cardHolder: 'Ada Buyer',
+        },
+      }),
+    );
+
+    // Act
+    render(
+      <Provider store={store}>
+        <PaymentSummary />
+      </Provider>,
+    );
+
+    // Assert
+    expect(screen.getByText(/Session restored without card secrets/i)).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: 'Pay' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
 });

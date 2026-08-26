@@ -1,5 +1,12 @@
 import type { CardBrand } from '@/shared/validators/card';
 
+export type CheckoutStep =
+  | 'closed'
+  | 'form'
+  | 'summary'
+  | 'paying'
+  | 'result';
+
 export type CustomerResponse = {
   id: string;
   email: string;

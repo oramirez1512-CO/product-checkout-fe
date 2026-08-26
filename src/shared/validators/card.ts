@@ -60,8 +60,18 @@ export function isValidCvc(cvc: string, brand: CardBrand = 'unknown'): boolean {
 }
 
 export function isValidExpMonth(month: string): boolean {
-  const n = Number(onlyDigits(month));
+  const raw = onlyDigits(month);
+  // Provider requires a 2-digit string; accept 1–2 digits and normalize on submit.
+  if (raw.length < 1 || raw.length > 2) {
+    return false;
+  }
+  const n = Number(raw);
   return Number.isInteger(n) && n >= 1 && n <= 12;
+}
+
+/** Provider expects `"01"`–`"12"`. */
+export function normalizeExpMonth(month: string): string {
+  return onlyDigits(month).padStart(2, '0').slice(-2);
 }
 
 /** Accepts YY or YYYY; must be current year or later (calendar month check separate). */
@@ -75,6 +85,15 @@ export function isValidExpYear(year: string, now = new Date()): boolean {
     return false;
   }
   return full >= now.getFullYear();
+}
+
+/** Provider expects a 2-digit year string (`"28"`). */
+export function normalizeExpYear(year: string): string {
+  const raw = onlyDigits(year);
+  if (raw.length === 4) {
+    return raw.slice(-2);
+  }
+  return raw.padStart(2, '0').slice(-2);
 }
 
 export function isExpiryInFuture(

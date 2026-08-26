@@ -1,13 +1,12 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { ApiError, apiRequest } from './client';
+import { ApiError, apiRequest, getHealth } from './client';
+import { injectAppEnv } from '../config/env';
 
 describe('apiRequest', () => {
   const originalFetch = global.fetch;
 
   afterEach(() => {
     global.fetch = originalFetch;
-    delete process.env.VITE_API_URL;
-    delete process.env.VITE_API_KEY;
   });
 
   it('GETs JSON and sends x-api-key when provided', async () => {
@@ -37,15 +36,125 @@ describe('apiRequest', () => {
     );
   });
 
-  it('throws ApiError on non-OK responses', async () => {
+  it('POSTs JSON body with Content-Type', async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ id: '1' }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await apiRequest('/customers', {
+      method: 'POST',
+      body: { email: 'a@b.co' },
+      apiKey: null,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/customers'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'a@b.co' }),
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
+      }),
+    );
+  });
+
+  it('uses injected env api key by default', async () => {
+    injectAppEnv({
+      VITE_API_URL: 'http://localhost:3000',
+      VITE_API_KEY: 'from-env',
+    });
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '{}',
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await apiRequest('/products');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/products'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'x-api-key': 'from-env' }),
+      }),
+    );
+  });
+
+  it('keeps non-JSON error bodies and throws ApiError', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 500,
+      text: async () => 'plain failure',
+    })) as unknown as typeof fetch;
+
+    await expect(apiRequest('/x', { apiKey: null })).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 500,
+      message: 'Request failed (500)',
+    });
+  });
+
+  it('throws ApiError on non-OK responses with message', async () => {
     global.fetch = jest.fn(async () => ({
       ok: false,
       status: 401,
       text: async () => JSON.stringify({ message: 'Invalid or missing API key' }),
     })) as unknown as typeof fetch;
 
-    await expect(apiRequest('/products', { apiKey: null })).rejects.toBeInstanceOf(
-      ApiError,
+    await expect(
+      apiRequest('/products', { apiKey: null }),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('getHealth calls /health', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ status: 'ok' }),
+    })) as unknown as typeof fetch;
+
+    await expect(getHealth()).resolves.toEqual({ status: 'ok' });
+  });
+
+  it('prefixes path without leading slash', async () => {
+    injectAppEnv({ VITE_API_URL: 'http://localhost:3000' });
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '',
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(apiRequest('products', { apiKey: null })).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/products',
+      expect.any(Object),
     );
+  });
+
+  it('keeps non-JSON success bodies as text', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => 'not-json',
+    })) as unknown as typeof fetch;
+
+    await expect(apiRequest('/raw', { apiKey: null })).resolves.toBe('not-json');
+  });
+
+  it('falls back when error JSON has non-string message', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 400,
+      text: async () => JSON.stringify({ message: 42 }),
+    })) as unknown as typeof fetch;
+
+    await expect(apiRequest('/x', { apiKey: null })).rejects.toMatchObject({
+      message: 'Request failed (400)',
+      status: 400,
+    });
   });
 });

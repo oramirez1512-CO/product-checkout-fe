@@ -9,4 +9,9 @@ describe('formatMoney', () => {
     expect(formatted).toMatch(/249/);
     expect(formatted).toMatch(/\$|COP/);
   });
+
+  it('falls back when currency code is invalid', () => {
+    injectAppEnv({ VITE_CURRENCY: 'NOT_A_CURRENCY' });
+    expect(formatMoney(10)).toMatch(/10/);
+  });
 });

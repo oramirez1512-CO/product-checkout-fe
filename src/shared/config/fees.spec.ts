@@ -3,10 +3,7 @@ import { resolveFeesDisplay } from './fees';
 
 describe('resolveFeesDisplay', () => {
   it('uses defaults when env empty', () => {
-    // Arrange / Act
     const fees = resolveFeesDisplay({});
-
-    // Assert
     expect(fees).toEqual({
       baseFee: 3500,
       deliveryFee: 10000,
@@ -25,5 +22,18 @@ describe('resolveFeesDisplay', () => {
       deliveryFee: 200,
       currency: 'USD',
     });
+  });
+
+  it('falls back on non-numeric fee strings', () => {
+    const fees = resolveFeesDisplay({
+      VITE_BASE_FEE: 'nope',
+      VITE_DELIVERY_FEE: '',
+    });
+    expect(fees.baseFee).toBe(3500);
+    expect(fees.deliveryFee).toBe(10000);
+  });
+
+  it('falls back when currency is blank', () => {
+    expect(resolveFeesDisplay({ VITE_CURRENCY: '   ' }).currency).toBe('COP');
   });
 });

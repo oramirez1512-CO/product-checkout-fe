@@ -6,43 +6,41 @@ Built with React and Redux. Mobile-first (iPhone SE as minimum). Deploy target: 
 
 ## Structure
 
-Feature-oriented layout under `src/`:
+Feature-oriented layout + light atomic design:
 
 ```
 src/
-  app/               # store and app-level wiring
-  features/          # product, checkout, payment
-  shared/            # ui, api client, validators, config
-  pages/             # route-level screens
+  app/                      # store, typed hooks
+  features/                 # product, checkout, payment (filled in later PRs)
+  shared/
+    api/                    # JSON client + x-api-key
+    config/                 # env + display fees
+    ui/atoms/               # Button, Input, Text
+    validators/             # later
+  pages/                    # route screens
 ```
 
-Checkout progress should survive refresh (Redux + localStorage). Card secrets are never stored in full.
+Only create UI pieces when a stage needs them. Checkout progress will survive refresh later (Redux + localStorage). Card secrets are never stored in full.
 
 ## Environment
 
-Copy `.env.example` → `.env` (or `.env.local`) and point at the API. Never commit secrets.
+Copy `.env.example` → `.env` (or `.env.local`). Never commit secrets.
 
 | Variable | Purpose |
 |----------|---------|
-| `VITE_API_URL` | Backend base URL |
+| `VITE_API_URL` | Backend base URL (no trailing slash) |
+| `VITE_API_KEY` | Same as BE `API_KEY`; sent as header `x-api-key` |
 | `VITE_BASE_FEE` / `VITE_DELIVERY_FEE` | Display defaults (COP); API is source of truth |
 | `VITE_CURRENCY` | Default `COP` |
 
-Agreed fee defaults: **base `3500.00`**, **delivery `10000.00`** (same as backend). Also in `src/shared/config/fees.ts`.
+Agreed fee defaults: **base `3500.00`**, **delivery `10000.00`**.
 
 ## Run locally
 
-Prerequisites: Node.js 20+, npm. Backend should be running (or `VITE_API_URL` pointing at a reachable API).
-
 ```bash
-# 1. Env
 cp .env.example .env
-# edit .env — VITE_API_URL (default http://localhost:3000)
-
-# 2. Install
+# set VITE_API_URL and VITE_API_KEY to match the backend
 npm install
-
-# 3. Dev server
 npm run dev
 ```
 
@@ -55,9 +53,34 @@ npm run dev
 | `npm run test:cov` | Tests + coverage report |
 
 - App: `http://localhost:5173`
+- Shell pings `GET /health` on load (no API key required on that route).
+
+## Deploy on Vercel (from this PR onward)
+
+Deploy early: every feature PR should get a **Preview** URL.
+
+1. [Vercel](https://vercel.com) → Add New Project → import `product-checkout-fe`.
+2. Framework preset: **Vite**. Build: `npm run build`. Output: `dist`.
+3. Project env vars (Production + Preview):
+
+| Name | Example |
+|------|---------|
+| `VITE_API_URL` | `https://your-be.vercel.app` |
+| `VITE_API_KEY` | same UUID as BE `API_KEY` |
+| `VITE_BASE_FEE` | `3500.00` |
+| `VITE_DELIVERY_FEE` | `10000.00` |
+| `VITE_CURRENCY` | `COP` |
+
+4. `vercel.json` rewrites all routes to `index.html` (SPA).
+5. On the **backend**, set `CORS_ORIGIN` to the FE origin(s), e.g. `https://your-fe.vercel.app` (and `http://localhost:5173` locally).
+
+After the first successful deploy, paste the Production URL here:
+
+- Production: _(add after first deploy)_
+- Preview: automatic per PR/branch in the Vercel dashboard / GitHub checks
 
 ## Status
 
-Phase 0 done: scaffold, env example, agreed fees.
-
-Phase 1 (bootstrap): Vite + React + Redux Toolkit + router. Shell page at `/`. No checkout screens yet.
+- Phase 0: scaffold, env example, fees — done
+- Phase bootstrap: Vite + Redux + router — done
+- **Phase foundation (`feature/fe-foundation`)**: shared API client, atoms, env/`VITE_API_KEY`, simple CSS, Vercel wiring docs — in progress / this branch

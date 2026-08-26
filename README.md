@@ -152,4 +152,5 @@ After the first successful deploy, paste the Production URL here:
 - **Phase product page (`feature/fe-product-page`)**: `GET /products`, ProductCard, loading/error/empty, Buy CTA — done
 - Coverage: Jest threshold ≥80%, CI + Codecov — done
 - **Phase checkout form (`feature/fe-checkout-form`)**: modal with customer + delivery + card; Luhn/Visa/MC validation; draft in Redux — done
-- **Phase summary (`feature/fe-summary`)**: payment summary (product, qty, fees, estimated total) + Pay CTA (charge in next stage)
+- **Phase summary (`feature/fe-summary`)**: payment summary + Pay CTA — done
+- **Phase pay flow (`feature/fe-pay-flow`)**: customer → delivery → PENDING → `/pay` → result; stock refetch on APPROVED

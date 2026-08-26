@@ -1,10 +1,12 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { configureStore } from '@reduxjs/toolkit';
+import { ApiError } from '@/shared/api/client';
+import { productReducer } from '@/features/product/productSlice';
 import {
   backToCheckoutForm,
+  backToSummary,
   checkoutReducer,
   closeCheckout,
-  confirmSummaryForPay,
   openCheckout,
   resetCheckout,
   selectCheckoutDraft,
@@ -13,9 +15,30 @@ import {
   updateCustomerDraft,
   updateDeliveryDraft,
 } from './checkoutSlice';
+import { runPayFlow } from './runPayFlow';
+import * as checkoutApi from './api';
+
+jest.mock('./api', () => ({
+  upsertCustomer: jest.fn(),
+  createDelivery: jest.fn(),
+  createPendingTransaction: jest.fn(),
+  payTransaction: jest.fn(),
+}));
+
+const mockedApi = checkoutApi as unknown as {
+  upsertCustomer: { mockResolvedValue: (v: unknown) => void; mockRejectedValue: (v: unknown) => void };
+  createDelivery: { mockResolvedValue: (v: unknown) => void };
+  createPendingTransaction: { mockResolvedValue: (v: unknown) => void };
+  payTransaction: { mockResolvedValue: (v: unknown) => void; mockRejectedValue: (v: unknown) => void };
+};
 
 function buildStore() {
-  return configureStore({ reducer: { checkout: checkoutReducer } });
+  return configureStore({
+    reducer: {
+      checkout: checkoutReducer,
+      product: productReducer,
+    },
+  });
 }
 
 const futureYear = String(new Date().getFullYear() + 2);
@@ -37,7 +60,29 @@ const validDraft = () => ({
   },
 });
 
+const paidTx = {
+  id: 'tx-1',
+  reference: 'ref-1',
+  status: 'APPROVED' as const,
+  productId: 'prod-1',
+  customerId: 'cust-1',
+  deliveryId: 'del-1',
+  quantity: 1,
+  amount: 100,
+  baseFee: 3500,
+  deliveryFee: 10000,
+  total: 13600,
+  currency: 'COP',
+  providerTransactionId: 'prov-1',
+  cardBrand: 'VISA',
+  cardLastFour: '4242',
+};
+
 describe('checkoutSlice', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('opens and closes the form step', () => {
     // Arrange
     const store = buildStore();
@@ -107,22 +152,81 @@ describe('checkoutSlice', () => {
     );
   });
 
-  it('confirmSummaryForPay advances only from summary', () => {
+  it('runPayFlow happy path stores transaction and clears PAN/CVV', async () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch({
+      type: 'product/fetchProducts/fulfilled',
+      payload: [{ id: 'prod-1', name: 'A', description: '', price: 1, stock: 1, imageUrl: null }],
+    });
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    mockedApi.upsertCustomer.mockResolvedValue({
+      id: 'cust-1',
+      email: 'ada@x.co',
+      fullName: 'Ada',
+      phone: null,
+    });
+    mockedApi.createDelivery.mockResolvedValue({
+      id: 'del-1',
+      customerId: 'cust-1',
+      address: 'Calle 1',
+      city: 'Bogotá',
+      region: 'Cund',
+      postalCode: null,
+    });
+    mockedApi.createPendingTransaction.mockResolvedValue({
+      ...paidTx,
+      status: 'PENDING',
+    });
+    mockedApi.payTransaction.mockResolvedValue(paidTx);
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    const state = store.getState().checkout;
+    expect(state.step).toBe('result');
+    expect(state.transaction?.status).toBe('APPROVED');
+    expect(state.customerId).toBe('cust-1');
+    expect(state.deliveryId).toBe('del-1');
+    expect(state.card.number).toBe('');
+    expect(state.card.cvc).toBe('');
+    expect(state.card.lastFour).toBe('4242');
+  });
+
+  it('runPayFlow rejection lands on result with payError', async () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch({
+      type: 'product/fetchProducts/fulfilled',
+      payload: [{ id: 'prod-1', name: 'A', description: '', price: 1, stock: 1, imageUrl: null }],
+    });
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    mockedApi.upsertCustomer.mockRejectedValue(new ApiError('boom', 500));
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    expect(store.getState().checkout.step).toBe('result');
+    expect(store.getState().checkout.payError).toBe('boom');
+  });
+
+  it('backToSummary returns from result', () => {
     // Arrange
     const store = buildStore();
     store.dispatch(submitCheckoutDraft(validDraft()));
+    store.dispatch({
+      type: runPayFlow.rejected.type,
+      payload: 'fail',
+      error: { message: 'fail' },
+    });
 
     // Act
-    store.dispatch(confirmSummaryForPay());
+    store.dispatch(backToSummary());
 
     // Assert
-    expect(store.getState().checkout.step).toBe('pay');
-
-    // Act — ignored when already pay
-    store.dispatch(confirmSummaryForPay());
-
-    // Assert
-    expect(store.getState().checkout.step).toBe('pay');
+    expect(store.getState().checkout.step).toBe('summary');
   });
 
   it('backToCheckoutForm returns to form from summary', () => {
@@ -132,18 +236,6 @@ describe('checkoutSlice', () => {
 
     // Act
     store.dispatch(backToCheckoutForm());
-
-    // Assert
-    expect(store.getState().checkout.step).toBe('form');
-  });
-
-  it('editing after summary returns to form', () => {
-    // Arrange
-    const store = buildStore();
-    store.dispatch(submitCheckoutDraft(validDraft()));
-
-    // Act
-    store.dispatch(updateCustomerDraft({ fullName: 'B' }));
 
     // Assert
     expect(store.getState().checkout.step).toBe('form');

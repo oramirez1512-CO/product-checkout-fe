@@ -7,9 +7,9 @@ import { selectPrimaryProduct } from '@/features/product/productSlice';
 import {
   backToCheckoutForm,
   closeCheckout,
-  confirmSummaryForPay,
 } from '../checkoutSlice';
 import { estimateCheckoutTotals } from '../lib/totals';
+import { runPayFlow } from '../runPayFlow';
 
 export function PaymentSummary() {
   const dispatch = useAppDispatch();
@@ -20,6 +20,7 @@ export function PaymentSummary() {
   const card = useAppSelector((s) => s.checkout.card);
   const product = useAppSelector(selectPrimaryProduct);
   const fees = getAppEnv().fees;
+  const paying = step === 'paying';
 
   if (!product) {
     return (
@@ -44,30 +45,16 @@ export function PaymentSummary() {
     deliveryFee: fees.deliveryFee,
   });
 
-  if (step === 'pay') {
+  if (paying) {
     return (
-      <div className="payment-summary payment-summary--pay" role="status">
+      <div className="payment-summary payment-summary--paying" role="status">
         <Text as="h2" id="checkout-dialog-title" className="payment-summary__title">
-          Ready to pay
+          Processing payment…
         </Text>
         <Text tone="muted">
-          Estimated total {formatMoney(totals.total)}. The charge call wires up
-          in the next release — nothing was charged.
+          Creating customer, delivery, and pending transaction, then charging the
+          card. Please wait.
         </Text>
-        <dl className="payment-summary__totals">
-          <div>
-            <dt>Total</dt>
-            <dd>{formatMoney(totals.total)}</dd>
-          </div>
-        </dl>
-        <div className="payment-summary__actions">
-          <Button type="button" variant="secondary" onClick={() => dispatch(backToCheckoutForm())}>
-            Back
-          </Button>
-          <Button type="button" onClick={() => dispatch(closeCheckout())}>
-            Close
-          </Button>
-        </div>
       </div>
     );
   }
@@ -125,10 +112,21 @@ export function PaymentSummary() {
       </section>
 
       <div className="payment-summary__actions">
-        <Button type="button" variant="secondary" onClick={() => dispatch(backToCheckoutForm())}>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={paying}
+          onClick={() => dispatch(backToCheckoutForm())}
+        >
           Edit details
         </Button>
-        <Button type="button" onClick={() => dispatch(confirmSummaryForPay())}>
+        <Button
+          type="button"
+          disabled={paying}
+          onClick={() => {
+            void dispatch(runPayFlow());
+          }}
+        >
           Pay
         </Button>
       </div>

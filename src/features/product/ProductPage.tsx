@@ -4,6 +4,7 @@ import { Button, Text } from '@/shared/ui/atoms';
 import { openCheckout } from '@/features/checkout/checkoutSlice';
 import { CheckoutForm } from '@/features/checkout/ui/CheckoutForm';
 import { CheckoutModal } from '@/features/checkout/ui/CheckoutModal';
+import { PaymentResult } from '@/features/checkout/ui/PaymentResult';
 import { PaymentSummary } from '@/features/checkout/ui/PaymentSummary';
 import {
   fetchProducts,
@@ -17,12 +18,12 @@ export function ProductPage() {
   const status = useAppSelector((state) => state.product.status);
   const error = useAppSelector((state) => state.product.error);
   const product = useAppSelector(selectPrimaryProduct);
-  const selectedId = useAppSelector((state) => state.product.selectedId);
   const checkoutStep = useAppSelector((state) => state.checkout.step);
   const checkoutOpen =
     checkoutStep === 'form' ||
     checkoutStep === 'summary' ||
-    checkoutStep === 'pay';
+    checkoutStep === 'paying' ||
+    checkoutStep === 'result';
 
   useEffect(() => {
     void dispatch(fetchProducts());
@@ -44,7 +45,8 @@ export function ProductPage() {
           Catalog
         </Text>
         <Text tone="muted">
-          Buy opens checkout → summary. Payment charge comes next.
+          Buy → checkout → summary → pay. Stock refreshes after an approved
+          charge.
         </Text>
       </header>
 
@@ -69,22 +71,14 @@ export function ProductPage() {
         </Text>
       ) : null}
 
-      {product ? (
-        <>
-          <ProductCard product={product} onBuy={handleBuy} />
-          {selectedId === product.id && checkoutStep === 'pay' ? (
-            <Text tone="muted" className="page__hint">
-              Summary confirmed — pay API lands in the next release.
-            </Text>
-          ) : null}
-        </>
-      ) : null}
+      {product ? <ProductCard product={product} onBuy={handleBuy} /> : null}
 
       <CheckoutModal open={checkoutOpen}>
         {checkoutStep === 'form' ? <CheckoutForm /> : null}
-        {checkoutStep === 'summary' || checkoutStep === 'pay' ? (
+        {checkoutStep === 'summary' || checkoutStep === 'paying' ? (
           <PaymentSummary />
         ) : null}
+        {checkoutStep === 'result' ? <PaymentResult /> : null}
       </CheckoutModal>
     </main>
   );

@@ -9,27 +9,31 @@ import {
   cardLastFour,
   detectCardBrand,
   onlyDigits,
-  type CardBrand,
 } from '@/shared/validators/card';
+import type { TransactionResponse, CheckoutCardMeta } from './types';
+import { runPayFlow } from './runPayFlow';
 
-export type CheckoutStep = 'closed' | 'form' | 'ready';
+export type CheckoutStep =
+  | 'closed'
+  | 'form'
+  | 'summary'
+  | 'paying'
+  | 'result';
 
-export type CheckoutCardMeta = {
-  brand: CardBrand;
-  lastFour: string;
-  /** Present while form is open / until pay; never write to localStorage later. */
-  number: string;
-  cvc: string;
-  expMonth: string;
-  expYear: string;
-  cardHolder: string;
-};
+export type { CheckoutCardMeta };
 
 type CheckoutState = {
   step: CheckoutStep;
+  /** MVP: single-unit purchase. */
+  quantity: number;
   customer: CustomerDraft;
   delivery: DeliveryDraft;
   card: CheckoutCardMeta;
+  customerId: string | null;
+  deliveryId: string | null;
+  transactionId: string | null;
+  transaction: TransactionResponse | null;
+  payError: string | null;
 };
 
 export const emptyCustomer = (): CustomerDraft => ({
@@ -57,9 +61,15 @@ export const emptyCardMeta = (): CheckoutCardMeta => ({
 
 const initialState: CheckoutState = {
   step: 'closed',
+  quantity: 1,
   customer: emptyCustomer(),
   delivery: emptyDelivery(),
   card: emptyCardMeta(),
+  customerId: null,
+  deliveryId: null,
+  transactionId: null,
+  transaction: null,
+  payError: null,
 };
 
 function toCardMeta(card: CardDraft): CheckoutCardMeta {
@@ -75,12 +85,23 @@ function toCardMeta(card: CardDraft): CheckoutCardMeta {
   };
 }
 
+function clearSensitiveCard(card: CheckoutCardMeta): CheckoutCardMeta {
+  return {
+    ...card,
+    number: '',
+    cvc: '',
+  };
+}
+
 const checkoutSlice = createSlice({
   name: 'checkout',
   initialState,
   reducers: {
     openCheckout(state) {
       state.step = 'form';
+      state.payError = null;
+      state.transaction = null;
+      state.transactionId = null;
     },
     closeCheckout(state) {
       state.step = 'closed';
@@ -90,7 +111,11 @@ const checkoutSlice = createSlice({
       action: PayloadAction<Partial<CustomerDraft>>,
     ) {
       state.customer = { ...state.customer, ...action.payload };
-      if (state.step === 'ready') {
+      if (
+        state.step === 'summary' ||
+        state.step === 'paying' ||
+        state.step === 'result'
+      ) {
         state.step = 'form';
       }
     },
@@ -99,7 +124,11 @@ const checkoutSlice = createSlice({
       action: PayloadAction<Partial<DeliveryDraft>>,
     ) {
       state.delivery = { ...state.delivery, ...action.payload };
-      if (state.step === 'ready') {
+      if (
+        state.step === 'summary' ||
+        state.step === 'paying' ||
+        state.step === 'result'
+      ) {
         state.step = 'form';
       }
     },
@@ -112,7 +141,11 @@ const checkoutSlice = createSlice({
         cardHolder: action.payload.cardHolder ?? state.card.cardHolder,
       };
       state.card = toCardMeta(merged);
-      if (state.step === 'ready') {
+      if (
+        state.step === 'summary' ||
+        state.step === 'paying' ||
+        state.step === 'result'
+      ) {
         state.step = 'form';
       }
     },
@@ -129,11 +162,45 @@ const checkoutSlice = createSlice({
         postalCode: action.payload.delivery.postalCode.trim(),
       };
       state.card = toCardMeta(action.payload.card);
-      state.step = 'ready';
+      state.step = 'summary';
+      state.payError = null;
+    },
+    backToCheckoutForm(state) {
+      state.step = 'form';
+    },
+    backToSummary(state) {
+      if (state.step === 'result') {
+        state.step = 'summary';
+        state.payError = null;
+      }
     },
     resetCheckout() {
       return initialState;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(runPayFlow.pending, (state) => {
+        state.step = 'paying';
+        state.payError = null;
+      })
+      .addCase(runPayFlow.fulfilled, (state, action) => {
+        state.customerId = action.payload.customerId;
+        state.deliveryId = action.payload.deliveryId;
+        state.transactionId = action.payload.transaction.id;
+        state.transaction = action.payload.transaction;
+        state.card = clearSensitiveCard(state.card);
+        state.step = 'result';
+        state.payError = null;
+      })
+      .addCase(runPayFlow.rejected, (state, action) => {
+        state.step = 'result';
+        state.payError =
+          typeof action.payload === 'string'
+            ? action.payload
+            : action.error.message ?? 'Payment failed';
+        state.card = clearSensitiveCard(state.card);
+      });
   },
 });
 
@@ -144,6 +211,8 @@ export const {
   updateDeliveryDraft,
   updateCardDraft,
   submitCheckoutDraft,
+  backToCheckoutForm,
+  backToSummary,
   resetCheckout,
 } = checkoutSlice.actions;
 

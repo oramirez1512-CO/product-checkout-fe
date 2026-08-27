@@ -86,6 +86,7 @@ describe('card validators', () => {
       expect(isValidExpYear('2026', now)).toBe(true);
       expect(isValidExpYear('25', now)).toBe(false);
       expect(isValidExpYear('2', now)).toBe(false);
+      expect(isValidExpYear('2101', now)).toBe(false);
       expect(normalizeExpYear('2028')).toBe('28');
       expect(normalizeExpYear('28')).toBe('28');
     });

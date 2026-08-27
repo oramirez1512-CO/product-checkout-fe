@@ -57,6 +57,9 @@ describe('CheckoutForm', () => {
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'ada@example.com' },
     });
+    fireEvent.change(screen.getByLabelText('Phone (optional)'), {
+      target: { value: '3001234567' },
+    });
     fireEvent.change(screen.getByLabelText('Address'), {
       target: { value: 'Calle 1' },
     });
@@ -65,6 +68,9 @@ describe('CheckoutForm', () => {
     });
     fireEvent.change(screen.getByLabelText('Region'), {
       target: { value: 'Cundinamarca' },
+    });
+    fireEvent.change(screen.getByLabelText('Postal code (optional)'), {
+      target: { value: '110111' },
     });
     fireEvent.change(screen.getByLabelText('Card number'), {
       target: { value: '4242424242424242' },

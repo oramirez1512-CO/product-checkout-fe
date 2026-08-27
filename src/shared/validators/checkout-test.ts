@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  cardBrandLabel,
   hasCheckoutErrors,
   isValidCardHolder,
   MIN_CARD_HOLDER_LENGTH,
@@ -83,6 +84,24 @@ describe('delivery / checkout validate', () => {
   it('customer email required shape', () => {
     // Arrange / Act / Assert
     expect(validateCustomerDraft({ email: '', fullName: '', phone: '' }).email).toBeTruthy();
+  });
+
+  it('customer phone invalid length', () => {
+    // Arrange / Act / Assert
+    expect(
+      validateCustomerDraft({
+        email: 'a@b.co',
+        fullName: 'Ada',
+        phone: '123',
+      }).phone,
+    ).toMatch(/7–15/);
+  });
+
+  it('cardBrandLabel covers Visa / Mastercard / empty', () => {
+    // Arrange / Act / Assert
+    expect(cardBrandLabel('visa')).toBe('Visa');
+    expect(cardBrandLabel('mastercard')).toBe('Mastercard');
+    expect(cardBrandLabel('unknown')).toBe('');
   });
 
   it('full draft passes when valid', () => {

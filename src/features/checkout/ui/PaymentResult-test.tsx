@@ -135,4 +135,52 @@ describe('PaymentResult', () => {
     expect(screen.getByText('Payment error')).toBeTruthy();
     expect(screen.getByText('network down')).toBeTruthy();
   });
+
+  it('shows non-approved provider status and Close', () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch({
+      type: runPayFlow.fulfilled.type,
+      payload: {
+        customerId: 'c1',
+        deliveryId: 'd1',
+        transaction: {
+          id: 't1',
+          reference: 'ref-e',
+          status: 'ERROR',
+          productId: 'p1',
+          customerId: 'c1',
+          deliveryId: 'd1',
+          quantity: 1,
+          amount: 100,
+          baseFee: 3500,
+          deliveryFee: 10000,
+          total: 13600,
+          currency: 'COP',
+          providerTransactionId: null,
+          cardBrand: null,
+          cardLastFour: null,
+        },
+      },
+    });
+
+    // Act
+    render(
+      <Provider store={store}>
+        <PaymentResult />
+      </Provider>,
+    );
+
+    // Assert
+    expect(screen.getByText('Payment ERROR')).toBeTruthy();
+    expect(
+      screen.getByText(/non-approved status/i),
+    ).toBeTruthy();
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    // Assert
+    expect(store.getState().checkout.step).toBe('closed');
+  });
 });

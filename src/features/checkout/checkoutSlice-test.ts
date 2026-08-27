@@ -26,10 +26,17 @@ jest.mock('./api', () => ({
 }));
 
 const mockedApi = checkoutApi as unknown as {
-  upsertCustomer: { mockResolvedValue: (v: unknown) => void; mockRejectedValue: (v: unknown) => void };
+  upsertCustomer: {
+    mockResolvedValue: (v: unknown) => void;
+    mockRejectedValue: (v: unknown) => void;
+    mock: { calls: unknown[] };
+  };
   createDelivery: { mockResolvedValue: (v: unknown) => void };
   createPendingTransaction: { mockResolvedValue: (v: unknown) => void };
-  payTransaction: { mockResolvedValue: (v: unknown) => void; mockRejectedValue: (v: unknown) => void };
+  payTransaction: {
+    mockResolvedValue: (v: unknown) => void;
+    mockRejectedValue: (v: unknown) => void;
+  };
 };
 
 function buildStore() {
@@ -254,5 +261,129 @@ describe('checkoutSlice', () => {
     expect(store.getState().checkout.step).toBe('closed');
     expect(store.getState().checkout.customer.email).toBe('');
     expect(store.getState().checkout.quantity).toBe(1);
+  });
+
+  it('editing drafts from summary returns to form', () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    expect(store.getState().checkout.step).toBe('summary');
+
+    // Act / Assert
+    store.dispatch(updateCustomerDraft({ fullName: 'Ada Updated' }));
+    expect(store.getState().checkout.step).toBe('form');
+
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    store.dispatch(updateDeliveryDraft({ city: 'Medellín' }));
+    expect(store.getState().checkout.step).toBe('form');
+
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    store.dispatch(updateCardDraft({ cardHolder: 'Ada Buyer' }));
+    expect(store.getState().checkout.step).toBe('form');
+  });
+
+  it('runPayFlow rejects when no product is selected', async () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch(submitCheckoutDraft(validDraft()));
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    expect(store.getState().checkout.payError).toBe('No product selected');
+  });
+
+  it('runPayFlow rejects when card secrets are missing after restore', async () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch({
+      type: 'product/fetchProducts/fulfilled',
+      payload: [{ id: 'prod-1', name: 'A', description: '', price: 1, stock: 1, imageUrl: null }],
+    });
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    store.dispatch({
+      type: runPayFlow.fulfilled.type,
+      payload: {
+        customerId: 'c1',
+        deliveryId: 'd1',
+        transaction: paidTx,
+      },
+    });
+    // After pay, PAN/CVC are cleared (same as persistence restore).
+    store.dispatch(backToSummary());
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    expect(store.getState().checkout.payError).toBe('Card details are incomplete');
+  });
+
+  it('runPayFlow rejects short cardholder before calling API', async () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch({
+      type: 'product/fetchProducts/fulfilled',
+      payload: [{ id: 'prod-1', name: 'A', description: '', price: 1, stock: 1, imageUrl: null }],
+    });
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    store.dispatch(
+      updateCardDraft({
+        number: '4242424242424242',
+        cvc: '123',
+        expMonth: '12',
+        expYear: futureYear,
+        cardHolder: 'Ada',
+      }),
+    );
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    expect(store.getState().checkout.payError).toMatch(/at least 5/i);
+    expect(mockedApi.upsertCustomer.mock.calls).toHaveLength(0);
+  });
+
+  it('runPayFlow maps generic Error and unknown failures', async () => {
+    // Arrange
+    const store = buildStore();
+    store.dispatch({
+      type: 'product/fetchProducts/fulfilled',
+      payload: [{ id: 'prod-1', name: 'A', description: '', price: 1, stock: 1, imageUrl: null }],
+    });
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    mockedApi.upsertCustomer.mockRejectedValue(new Error('timeout'));
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    expect(store.getState().checkout.payError).toBe('timeout');
+
+    // Arrange unknown throw
+    store.dispatch(submitCheckoutDraft(validDraft()));
+    mockedApi.upsertCustomer.mockRejectedValue('not-an-error');
+
+    // Act
+    await store.dispatch(runPayFlow());
+
+    // Assert
+    expect(store.getState().checkout.payError).toBe('Payment failed');
+  });
+
+  it('runPayFlow.rejected without payload uses error.message', () => {
+    // Arrange
+    const store = buildStore();
+
+    // Act
+    store.dispatch({
+      type: runPayFlow.rejected.type,
+      error: { message: 'aborted' },
+    });
+
+    // Assert
+    expect(store.getState().checkout.payError).toBe('aborted');
   });
 });

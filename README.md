@@ -7,6 +7,23 @@ SPA for buying a single product: product page → card & delivery → payment su
 
 Built with React and Redux. Mobile-first (iPhone SE as minimum). Deploy target: Vercel. Talks to `product-checkout-be`.
 
+## Live demo & related repos
+
+| Resource | URL |
+|----------|-----|
+| **Frontend (Production)** | https://product-checkout-fe.vercel.app |
+| **Backend API (Production)** | https://product-checkout-be.vercel.app |
+| **Backend health** | https://product-checkout-be.vercel.app/health |
+| **Backend GitHub** | https://github.com/oramirez1512-CO/product-checkout-be |
+
+### How they connect
+
+1. FE `VITE_API_URL` → Backend Production URL above.  
+2. FE `VITE_API_KEY` = BE `API_KEY`.  
+3. BE `CORS_ORIGIN` includes the FE Production origin (and optionally `https://product-checkout-fe*.vercel.app` for Previews).
+
+
+
 ## Structure
 
 Feature-oriented layout + light atomic design:
@@ -137,22 +154,5 @@ Deploy early: every feature PR should get a **Preview** URL.
 | `VITE_CURRENCY` | `COP` |
 
 4. `vercel.json` rewrites all routes to `index.html` (SPA).
-5. On the **backend**, set `CORS_ORIGIN` to the FE origin(s), e.g. `https://your-fe.vercel.app` (and `http://localhost:5173` locally).
+5. On the **backend**, set `CORS_ORIGIN` to the FE origin(s), e.g. `https://app-fe.vercel.app` (and `http://localhost:5173` locally).
 
-After the first successful deploy, paste the Production URL here:
-
-- Production: _(add after first deploy)_
-- Preview: automatic per PR/branch in the Vercel dashboard / GitHub checks
-
-## Status
-
-- Phase 0: scaffold, env example, fees — done
-- Phase bootstrap: Vite + Redux + router — done
-- Phase foundation: shared API client, atoms, env/`VITE_API_KEY`, Vercel — done
-- **Phase product page (`feature/fe-product-page`)**: `GET /products`, ProductCard, loading/error/empty, Buy CTA — done
-- Coverage: Jest threshold ≥80%, CI + Codecov — done
-- **Phase checkout form (`feature/fe-checkout-form`)**: modal with customer + delivery + card; Luhn/Visa/MC validation; draft in Redux — done
-- **Phase summary (`feature/fe-summary`)**: payment summary + Pay CTA — done
-- **Phase pay flow (`feature/fe-pay-flow`)**: customer → delivery → PENDING → `/pay` → result; stock refetch on APPROVED — done
-- **Phase persistence (`feature/fe-persistence`)**: F5 restores step + drafts/ids (never PAN/CVV); re-enter card to pay — done
-- **Phase tests (`feature/fe-tests`)**: residual checkout/pay/persistence coverage — `npm run test:cov` ≈ **99.8%** statements/lines, **~91%** branches (threshold ≥80% / ≥70% branches); 118 tests
